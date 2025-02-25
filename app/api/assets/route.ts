@@ -36,7 +36,7 @@ export async function GET(request: Request) {
       params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`)
     }
 
-    if (type && type !== "All") {
+    if (type && type !== "all") {
       query += ` AND a.development_type = ?`
       params.push(type)
     }

@@ -18,26 +18,46 @@ interface Asset {
   development_type: string
 }
 
+interface ApiResponse {
+  data: Asset[]
+  pagination: {
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+  }
+}
+
 export default function AssetsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [filterType, setFilterType] = useState("all")
   const [assets, setAssets] = useState<Asset[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [pagination, setPagination] = useState<ApiResponse["pagination"] | null>(null)
   const router = useRouter()
 
   useEffect(() => {
     const fetchAssets = async () => {
       try {
+        setLoading(true)
+        setError(null)
         const params = new URLSearchParams({
           search: searchTerm,
           type: filterType,
         })
         const res = await fetch(`/api/assets?${params}`)
-        if (!res.ok) throw new Error("Failed to fetch")
-        const data = await res.json()
-        setAssets(data)
+
+        if (!res.ok) throw new Error("Failed to fetch assets")
+        const data: ApiResponse = await res.json()
+        console.log(data)
+        setAssets(data.data)
+        setPagination(data.pagination)
       } catch (error) {
         console.error("Error:", error)
+        setError(error instanceof Error ? error.message : "An unknown error occurred")
+        setAssets([])
+        setPagination(null)
       } finally {
         setLoading(false)
       }
@@ -48,9 +68,11 @@ export default function AssetsPage() {
   }, [searchTerm, filterType])
 
   const handleExport = async () => {
-    // Implement CSV export
+    if (assets.length === 0) {
+      console.error("No assets to export")
+      return
+    }
     const csv = assets.map((asset) => Object.values(asset).join(",")).join("\n")
-
     const blob = new Blob([csv], { type: "text/csv" })
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement("a")
@@ -79,7 +101,7 @@ export default function AssetsPage() {
             <SelectItem value="Extension">Extension</SelectItem>
           </SelectContent>
         </Select>
-        <Button className="ml-auto" onClick={handleExport}>
+        <Button className="ml-auto" onClick={handleExport} disabled={assets.length === 0}>
           Export
         </Button>
       </div>
@@ -102,6 +124,12 @@ export default function AssetsPage() {
               <TableRow>
                 <TableCell colSpan={7} className="text-center">
                   Loading...
+                </TableCell>
+              </TableRow>
+            ) : error ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center text-red-500">
+                  Error: {error}
                 </TableCell>
               </TableRow>
             ) : assets.length === 0 ? (
@@ -130,6 +158,32 @@ export default function AssetsPage() {
           </TableBody>
         </Table>
       </div>
+      {pagination && (
+        <div className="mt-4 flex justify-between items-center">
+          <div>
+            Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
+            {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => {
+                /* Implement previous page logic */
+              }}
+              disabled={pagination.page === 1}
+            >
+              Previous
+            </Button>
+            <Button
+              onClick={() => {
+                /* Implement next page logic */
+              }}
+              disabled={pagination.page === pagination.totalPages}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

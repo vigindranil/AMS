@@ -59,7 +59,7 @@ export function TopNav() {
           <Link href="/dashboard" className="text-sm font-medium transition-colors hover:text-primary">
             Dashboard
           </Link>
-          <Link href="/assets" className="text-sm font-medium transition-colors hover:text-primary">
+          <Link href="/assets/all" className="text-sm font-medium transition-colors hover:text-primary">
             Assets
           </Link>
           <Link
